@@ -658,6 +658,7 @@ function gamestate.get_blinds_info()
     if small_tag_key then
       local tag_info = get_tag_info(small_tag_key)
       blinds.small.tag_name = tag_info.name
+      blinds.small.tag_key = small_tag_key
       blinds.small.tag_effect = tag_info.effect
     end
   end
@@ -682,6 +683,7 @@ function gamestate.get_blinds_info()
     if big_tag_key then
       local tag_info = get_tag_info(big_tag_key)
       blinds.big.tag_name = tag_info.name
+      blinds.big.tag_key = big_tag_key
       blinds.big.tag_effect = tag_info.effect
     end
   end
@@ -809,6 +811,16 @@ function gamestate.get_gamestate()
   -- Pack cards area (available during pack opening phases)
   if G.pack_cards and not G.pack_cards.REMOVED then
     state_data.pack = extract_area(G.pack_cards)
+  end
+
+  -- Earned tags waiting to trigger (shown on the left in the game)
+  if G.GAME and G.GAME.tags then
+    local tags = {}
+    for _, tag in ipairs(G.GAME.tags) do
+      local info = get_tag_info(tag.key)
+      tags[#tags + 1] = { key = tag.key, name = info.name, effect = info.effect }
+    end
+    state_data.tags = tags
   end
 
   return state_data
