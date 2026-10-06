@@ -813,6 +813,19 @@ function gamestate.get_gamestate()
     state_data.pack = extract_area(G.pack_cards)
   end
 
+  -- Deck unlocks and highest playable stake per deck (same rule as the game's run setup screen)
+  if G.P_CENTER_POOLS and G.P_CENTER_POOLS.Back and G.PROFILES and G.SETTINGS then
+    local all = G.PROFILES[G.SETTINGS.profile].all_unlocked
+    local unlocks = {}
+    for _, back in ipairs(G.P_CENTER_POOLS.Back) do
+      unlocks[back.key] = {
+        unlocked = back.unlocked and true or false,
+        max_stake = all and 8 or math.min(get_deck_win_stake(back.key) + 1, 8),
+      }
+    end
+    state_data.unlocks = unlocks
+  end
+
   -- Run stats from the win/lose screen (seed deliberately left out)
   if G.GAME and G.GAME.round_scores then
     local stats = {}
