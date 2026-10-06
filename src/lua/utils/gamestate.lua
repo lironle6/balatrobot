@@ -813,6 +813,16 @@ function gamestate.get_gamestate()
     state_data.pack = extract_area(G.pack_cards)
   end
 
+  -- Run stats from the win/lose screen (seed deliberately left out)
+  if G.GAME and G.GAME.round_scores then
+    local stats = {}
+    for _, k in ipairs({ "hand", "new_collection", "cards_played", "cards_discarded", "times_rerolled", "cards_purchased" }) do
+      local row = G.GAME.round_scores[k]
+      stats[k] = row and row.amt or 0
+    end
+    state_data.run_stats = stats
+  end
+
   -- Earned tags waiting to trigger (shown on the left in the game)
   if G.GAME and G.GAME.tags then
     local tags = {}
