@@ -3,6 +3,16 @@
 ---@type BB_LOGGER
 local BB_LOGGER = assert(SMODS.load_file("src/lua/utils/logger.lua"))()
 
+-- Pack finished: back in the shop, back at blind select (packs from skip tags),
+-- or a chained tag pack has opened in place of the old one
+local function pack_done(old_pack)
+  if G.STATE == G.STATES.SHOP or G.STATE == G.STATES.BLIND_SELECT then
+    return not G.pack_cards or G.pack_cards.REMOVED
+  end
+  return G.STATE == G.STATES.SMODS_BOOSTER_OPENED and G.STATE_COMPLETE
+    and G.pack_cards and G.pack_cards ~= old_pack and not G.pack_cards.REMOVED
+end
+
 -- ==========================================================================
 -- Pack Select Endpoint Params
 -- ==========================================================================
@@ -84,6 +94,7 @@ return {
   ---@param send_response fun(response: Response.Endpoint)
   execute = function(args, send_response)
     sendDebugMessage("Init pack()", "BB.ENDPOINTS")
+    local old_pack = G.pack_cards
 
     -- Validate that exactly one of card or skip is provided
     local set = 0
@@ -261,10 +272,7 @@ return {
             end
           else
             -- Pack closes - wait for return to shop
-            local pack_closed = not G.pack_cards or G.pack_cards.REMOVED
-            local back_to_shop = G.STATE == G.STATES.SHOP
-
-            if pack_closed and back_to_shop then
+            if pack_done(old_pack) then
               sendDebugMessage("Return pack() after selection", "BB.ENDPOINTS")
               send_response(BB_GAMESTATE.get_gamestate())
               return true
@@ -288,10 +296,7 @@ return {
         trigger = "condition",
         blocking = false,
         func = function()
-          local pack_closed = not G.pack_cards or G.pack_cards.REMOVED
-          local back_to_shop = G.STATE == G.STATES.SHOP
-
-          if pack_closed and back_to_shop then
+          if pack_done(old_pack) then
             sendDebugMessage("Return pack() after skip", "BB.ENDPOINTS")
             send_response(BB_GAMESTATE.get_gamestate())
             return true
