@@ -54,7 +54,7 @@ BB_SETTINGS = {
   debug = os.getenv("BALATROBOT_DEBUG") == "1" or false,
   no_shaders = os.getenv("BALATROBOT_NO_SHADERS") == "1" or false,
   fps_cap = tonumber(os.getenv("BALATROBOT_FPS_CAP")) or 60,
-  gamespeed = tonumber(os.getenv("BALATROBOT_GAMESPEED")) or 4,
+  gamespeed = tonumber(os.getenv("BALATROBOT_GAMESPEED")) or 10,
   animation_fps = tonumber(os.getenv("BALATROBOT_ANIMATION_FPS")) or 10,
   no_reduced_motion = os.getenv("BALATROBOT_NO_REDUCED_MOTION") == "1" or false,
   pixel_art_smoothing = os.getenv("BALATROBOT_PIXEL_ART_SMOOTHING") == "1" or false,
