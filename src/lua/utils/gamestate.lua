@@ -512,13 +512,22 @@ local function get_blind_effect_from_ui(blind_config)
     end
   end
 
+  if blind_config.key == "bl_wheel" and blind_config.loc_vars then
+    local vars = blind_config:loc_vars().vars or {}
+    for i, line in ipairs(effect_parts) do
+      effect_parts[i] = line:gsub("#(%d+)#", function(index)
+        return tostring(vars[tonumber(index)] or ("#" .. index .. "#"))
+      end)
+    end
+  end
+
   return table.concat(effect_parts, " ")
 end
 
 ---Gets tag information using localize function (same approach as Tag:set_text)
 ---@param tag_key string The tag key from G.P_TAGS
 ---@return table tag_info {name: string, effect: string}
-local function get_tag_info(tag_key)
+local function get_tag_info(tag_key, blind_type)
   local result = { name = "", effect = "" }
 
   if not tag_key or not G.P_TAGS or not G.P_TAGS[tag_key] then
@@ -554,7 +563,10 @@ local function get_tag_info(tag_key)
     local skips = (G.GAME and G.GAME.skips) or 0
     loc_vars = { skip_bonus, skip_bonus * (skips + 1) }
   elseif name == "Orbital Tag" then
-    local orbital_hand = "Poker Hand" -- Default placeholder
+    local choices = G.GAME and G.GAME.orbital_choices
+    local ante = G.GAME and G.GAME.round_resets and G.GAME.round_resets.ante
+    local hand = choices and choices[ante] and choices[ante][blind_type]
+    local orbital_hand = hand and localize(hand, "poker_hands") or "Poker Hand"
     local levels = tag_data.config and tag_data.config.levels or 0
     loc_vars = { orbital_hand, levels }
   elseif name == "Economy Tag" then
@@ -656,7 +668,7 @@ function gamestate.get_blinds_info()
     -- Get tag information
     local small_tag_key = G.GAME.round_resets.blind_tags and G.GAME.round_resets.blind_tags.Small
     if small_tag_key then
-      local tag_info = get_tag_info(small_tag_key)
+      local tag_info = get_tag_info(small_tag_key, "Small")
       blinds.small.tag_name = tag_info.name
       blinds.small.tag_key = small_tag_key
       blinds.small.tag_effect = tag_info.effect
@@ -681,7 +693,7 @@ function gamestate.get_blinds_info()
     -- Get tag information
     local big_tag_key = G.GAME.round_resets.blind_tags and G.GAME.round_resets.blind_tags.Big
     if big_tag_key then
-      local tag_info = get_tag_info(big_tag_key)
+      local tag_info = get_tag_info(big_tag_key, "Big")
       blinds.big.tag_name = tag_info.name
       blinds.big.tag_key = big_tag_key
       blinds.big.tag_effect = tag_info.effect
@@ -811,6 +823,7 @@ function gamestate.get_gamestate()
   -- Pack cards area (available during pack opening phases)
   if G.pack_cards and not G.pack_cards.REMOVED then
     state_data.pack = extract_area(G.pack_cards)
+    state_data.pack.picks_remaining = G.GAME.pack_choices
   end
 
   -- Deck unlocks and highest playable stake per deck (same rule as the game's run setup screen)

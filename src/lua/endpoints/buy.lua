@@ -21,6 +21,11 @@ return {
   description = "Buy a card from the shop",
 
   schema = {
+    use = {
+      type = "boolean",
+      required = false,
+      description = "Buy and immediately use a shop consumable without storing it",
+    },
     card = {
       type = "integer",
       required = false,
@@ -118,6 +123,11 @@ return {
 
     -- Get the card
     local card = area.cards[pos]
+    local use_card = args.use and args.card and G.shop_jokers.cards[pos] or nil
+    if args.use and (not use_card or not use_card.ability.consumeable or not use_card:can_use_consumeable()) then
+      send_response({ message = "This shop card cannot be used now", name = BB_ERROR_NAMES.NOT_ALLOWED })
+      return
+    end
 
     -- Check if the card can be afforded (accounting for Credit Card joker via bankrupt_at)
     local available_money = G.GAME.dollars - G.GAME.bankrupt_at
@@ -131,7 +141,8 @@ return {
 
     -- Ensure there is space in joker area
     if card.set == "JOKER" then
-      if gamestate.jokers.count >= gamestate.jokers.limit then
+      local extra_slot = card.modifier and card.modifier.edition == "NEGATIVE" and 1 or 0
+      if gamestate.jokers.count >= gamestate.jokers.limit + extra_slot then
         send_response({
           message = "Cannot purchase joker card, joker slots are full. Current: "
             .. gamestate.jokers.count
@@ -145,7 +156,7 @@ return {
 
     -- Ensure there is space in consumable area
     if card.set == "PLANET" or card.set == "SPECTRAL" or card.set == "TAROT" then
-      if gamestate.consumables.count >= gamestate.consumables.limit then
+      if not args.use and gamestate.consumables.count >= gamestate.consumables.limit then
         send_response({
           message = "Cannot purchase consumable card, consumable slots are full. Current: "
             .. gamestate.consumables.count
@@ -176,7 +187,9 @@ return {
 
     -- Get the buy button from the card
     local btn
-    if args.card then
+    if args.use then
+      btn = { config = { ref_table = use_card, id = "buy_and_use" } }
+    elseif args.card then
       btn = G.shop_jokers.cards[pos].children.buy_button.definition
     elseif args.voucher then
       btn = G.shop_vouchers.cards[pos].children.buy_button.definition
@@ -218,7 +231,9 @@ return {
           local shop_decreased = (shop_count == initial_shop_count - 1)
           local dest_increased = (dest_count == initial_dest_count + 1)
           local money_deducted = (G.GAME.dollars == initial_money - card.cost.buy)
-          if shop_decreased and dest_increased and money_deducted and G.STATE == G.STATES.SHOP then
+          if args.use then
+            done = shop_decreased and use_card.REMOVED and G.STATE == G.STATES.SHOP
+          elseif shop_decreased and dest_increased and money_deducted and G.STATE == G.STATES.SHOP then
             done = true
           end
         elseif args.voucher then
