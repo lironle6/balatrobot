@@ -9,6 +9,7 @@ BB_ENDPOINTS = {
   "src/lua/endpoints/health.lua",
   -- Gamestate endpoints
   "src/lua/endpoints/gamestate.lua",
+  "src/lua/endpoints/joker_collection.lua",
   -- Save/load endpoints
   "src/lua/endpoints/save.lua",
   "src/lua/endpoints/load.lua",
