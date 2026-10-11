@@ -278,6 +278,12 @@ local function extract_card_value(card)
 
   -- Effect description (for all cards)
   value.effect = get_card_ui_description(card)
+  if card.config and card.config.center and card.config.center.key == "c_fool" then
+    local target = G.GAME and G.GAME.last_tarot_planet
+    value.copy_target = target and target ~= "c_fool" and G.P_CENTERS[target]
+      and localize({ type = "name_text", key = target, set = G.P_CENTERS[target].set }) or "None"
+    value.effect = value.effect .. " (Copies: " .. value.copy_target .. ")"
+  end
 
   return value
 end
@@ -461,6 +467,18 @@ local function extract_round_info()
 
   if G.GAME.current_round.reroll_cost then
     round.reroll_cost = G.GAME.current_round.reroll_cost
+  end
+
+  local current = G.GAME.current_round
+  round.free_rerolls = current.free_rerolls
+  for _, field in ipairs({ "idol_card", "mail_card", "ancient_card", "castle_card" }) do
+    local target = current[field]
+    if target then
+      round[field] = {
+        rank = target.rank and convert_rank_to_enum(target.rank) or nil,
+        suit = target.suit and convert_suit_to_enum(target.suit) or nil,
+      }
+    end
   end
 
   -- Chips is stored in G.GAME not G.GAME.current_round
@@ -750,6 +768,10 @@ function gamestate.get_gamestate()
     state_data.round_num = G.GAME.round or 0
     state_data.ante_num = (G.GAME.round_resets and G.GAME.round_resets.ante) or 0
     state_data.money = G.GAME.dollars or 0
+    state_data.economy = {
+      interest_cap = G.GAME.interest_cap,
+      interest_amount = G.GAME.interest_amount,
+    }
     state_data.won = G.GAME.won
 
     -- Deck (optional)

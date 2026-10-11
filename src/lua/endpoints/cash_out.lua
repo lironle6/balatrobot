@@ -25,7 +25,26 @@ return {
   ---@param send_response fun(response: Response.Endpoint)
   execute = function(_, send_response)
     sendDebugMessage("Init cash_out()", "BB.ENDPOINTS")
-    G.FUNCS.cash_out({ config = {} })
+    -- Wait for the round summary to finish: the last row sets the payout (tags included) and adds this button.
+    G.E_MANAGER:add_event(Event({
+      trigger = "condition",
+      blocking = false,
+      func = function()
+        -- The button is its own UIBox (major = G.round_eval), registered in G.I.UIBOX.
+        local ready = false
+        for _, box in ipairs(G.I.UIBOX or {}) do
+          if box.get_UIE_by_ID and box:get_UIE_by_ID("cash_out_button") then
+            ready = true
+            break
+          end
+        end
+        if not ready then
+          return false
+        end
+        G.FUNCS.cash_out({ config = {} })
+        return true
+      end,
+    }))
 
     local num_items = function(area)
       local count = 0

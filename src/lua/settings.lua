@@ -286,3 +286,6 @@ BB_SETTINGS.setup = function()
     configure_audio()
   end
 end
+
+-- Exposed so balatrobot.lua can apply headless without the full setup().
+BB_SETTINGS.configure_headless = configure_headless

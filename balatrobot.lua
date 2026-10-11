@@ -3,6 +3,9 @@ assert(SMODS.load_file("src/lua/settings.lua"))() -- define BB_SETTINGS
 
 -- Configure Balatro with appropriate settings from environment variables
 -- Preserve player settings and normal frame timing.
+if BB_SETTINGS.headless then
+  BB_SETTINGS.configure_headless()
+end
 G.SETTINGS.GAMESPEED = BB_SETTINGS.gamespeed
 -- Endpoints for the BalatroBot API
 BB_ENDPOINTS = {
