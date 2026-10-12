@@ -289,3 +289,4 @@ end
 
 -- Exposed so balatrobot.lua can apply headless without the full setup().
 BB_SETTINGS.configure_headless = configure_headless
+BB_SETTINGS.configure_love_update = configure_love_update

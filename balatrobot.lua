@@ -5,6 +5,9 @@ assert(SMODS.load_file("src/lua/settings.lua"))() -- define BB_SETTINGS
 -- Preserve player settings and normal frame timing.
 if BB_SETTINGS.headless then
   BB_SETTINGS.configure_headless()
+  -- Fixed dt + uncapped FPS lets the event queue run one pass per frame instead of per 1/60 s.
+  BB_SETTINGS.configure_love_update()
+  G.FPS_CAP = nil
 end
 G.SETTINGS.GAMESPEED = BB_SETTINGS.gamespeed
 -- Endpoints for the BalatroBot API
