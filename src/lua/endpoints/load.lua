@@ -96,6 +96,7 @@ return {
     end
 
     G:start_run({ savetext = G.SAVED_GAME })
+    BB_CARD_IDS.repair()
 
     -- Restore original print
     print = original_print
@@ -153,6 +154,7 @@ return {
         end
 
         if done then
+          BB_CARD_IDS.repair()
           sendDebugMessage("Return load() - loaded from " .. path, "BB.ENDPOINTS")
           send_response({
             success = true,

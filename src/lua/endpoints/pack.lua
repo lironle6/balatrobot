@@ -308,13 +308,10 @@ return {
       return
     end
 
-    -- Wait for hand cards to load for Arcana and Spectral packs
-    local pack_key = G.pack_cards
-      and G.pack_cards.cards
-      and G.pack_cards.cards[1]
-      and G.pack_cards.cards[1].ability
-      and G.pack_cards.cards[1].ability.set
-    local needs_hand = pack_key == "Tarot" or pack_key == "Spectral"
+    -- Mixed pack contents do not determine whether the booster deals a hand.
+    local booster = SMODS and SMODS.OPENED_BOOSTER
+    local booster_center = booster and booster.config and booster.config.center
+    local needs_hand = booster_center and booster_center.draw_hand == true
 
     if needs_hand then
       -- Wait for hand cards to be fully loaded and positioned

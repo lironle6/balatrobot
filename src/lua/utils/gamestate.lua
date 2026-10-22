@@ -8,6 +8,45 @@
 ---@field get_blinds_info fun(): table<string, Blind>
 ---@field get_gamestate fun(): GameState
 local gamestate = {}
+local boss_reroll = assert(SMODS.load_file("src/lua/utils/boss_reroll.lua"))()
+local joker_display = assert(SMODS.load_file("src/lua/utils/joker_display_preview.lua"))()
+
+-- Observe native payout rows without rerunning rewards or duplicating their arithmetic.
+local cashout, cashout_box
+local native_add_round_eval_row = add_round_eval_row
+function add_round_eval_row(config, ...)
+  local result = native_add_round_eval_row(config, ...)
+  if config and G and G.round_eval then
+    if config.name == "blind1" or cashout_box ~= G.round_eval then
+      cashout_box = G.round_eval
+      cashout = {rows = {}, ready = false}
+    end
+    if config.name == "bottom" then
+      cashout.total = config.dollars
+    else
+      local labels = {hands = "Unused hands", discards = "Unused discards", interest = "Interest"}
+      local label = labels[config.name] or config.text or config.condition
+      if config.name == "blind1" then label = G.GAME.blind.name end
+      if config.card then label = config.card.ability and config.card.ability.name or label end
+      cashout.rows[#cashout.rows + 1] = {
+        name = config.name, label = label or config.name, dollars = config.dollars,
+      }
+    end
+  end
+  return result
+end
+
+local function extract_cashout()
+  if G.STATE ~= G.STATES.ROUND_EVAL or cashout_box ~= G.round_eval or not cashout then return nil end
+  cashout.ready = false
+  for _, box in ipairs(G.I.UIBOX or {}) do
+    if box.get_UIE_by_ID and box:get_UIE_by_ID("cash_out_button") then
+      cashout.ready = cashout.total ~= nil
+      break
+    end
+  end
+  return cashout
+end
 
 -- ==========================================================================
 -- State Name Mapping
@@ -308,6 +347,9 @@ local function extract_card_state(card)
   if card.highlighted then
     state.highlight = true
   end
+  if card.ability and card.ability.forced_selection then
+    state.forced = true
+  end
 
   return state
 end
@@ -364,7 +406,7 @@ local function extract_card(card)
   end
 
   return {
-    id = card.sort_id or 0,
+    id = BB_CARD_IDS.get(card),
     key = key,
     set = set,
     label = card.label or "",
@@ -802,6 +844,7 @@ function gamestate.get_gamestate()
       end
       state_data.used_vouchers = used_vouchers
     end
+    state_data.boss_reroll = {eligible = boss_reroll.reason() == nil, cost = boss_reroll.cost}
 
     -- Poker hands
     if G.GAME.hands then
@@ -810,6 +853,7 @@ function gamestate.get_gamestate()
 
     -- Round info
     state_data.round = extract_round_info()
+    state_data.cashout = extract_cashout()
 
     -- Blinds info
     state_data.blinds = gamestate.get_blinds_info()
@@ -817,6 +861,13 @@ function gamestate.get_gamestate()
 
   -- Always available areas
   state_data.jokers = extract_area(G.jokers)
+  if state_data.jokers then
+    local displays = {}
+    for _, display in ipairs(joker_display({}, true)) do displays[display.id] = display.rows end
+    for _, card in pairs(state_data.jokers.cards) do
+      card.display_rows = displays[card.id] or {}
+    end
+  end
   state_data.consumables = extract_area(G.consumeables) -- Note: typo in game code
 
   -- Cards remaining in deck
@@ -855,6 +906,7 @@ function gamestate.get_gamestate()
     for _, back in ipairs(G.P_CENTER_POOLS.Back) do
       unlocks[back.key] = {
         unlocked = back.unlocked and true or false,
+        beaten_stake = get_deck_win_stake(back.key),
         max_stake = all and 8 or math.min(get_deck_win_stake(back.key) + 1, 8),
       }
     end

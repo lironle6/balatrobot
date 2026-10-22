@@ -1,4 +1,5 @@
 -- src/lua/endpoints/reroll.lua
+local boss_reroll = assert(SMODS.load_file("src/lua/utils/boss_reroll.lua"))()
 
 -- ==========================================================================
 -- Reroll Endpoint Params
@@ -25,17 +26,9 @@ return {
   ---@param send_response fun(response: Response.Endpoint)
   execute = function(params, send_response)
     if params and params.boss then
-      local vouchers = G.GAME.used_vouchers
-      if not (vouchers.v_retcon or (vouchers.v_directors_cut and not G.GAME.round_resets.boss_rerolled)) then
-        send_response({ name = BB_ERROR_NAMES.NOT_ALLOWED, message = "Boss reroll requires an available Director's Cut or Retcon" })
-        return
-      end
-      if G.GAME.dollars - G.GAME.bankrupt_at < 10 then
-        send_response({ name = BB_ERROR_NAMES.NOT_ALLOWED, message = "Boss reroll requires $10" })
-        return
-      end
-      if G.GAME.round_resets.blind_states.Boss == "Defeated" or G.CONTROLLER.locks.boss_reroll then
-        send_response({ name = BB_ERROR_NAMES.NOT_ALLOWED, message = "Boss reroll unavailable" })
+      local reason = boss_reroll.reason()
+      if reason then
+        send_response({ name = BB_ERROR_NAMES.NOT_ALLOWED, message = reason })
         return
       end
       local before = G.GAME.dollars
@@ -43,7 +36,7 @@ return {
       G.E_MANAGER:add_event(Event({
         trigger = "condition", blocking = false,
         func = function()
-          if G.GAME.dollars == before - 10 and not G.CONTROLLER.locks.boss_reroll then
+          if G.GAME.dollars == before - boss_reroll.cost and not G.CONTROLLER.locks.boss_reroll then
             save_run()
             send_response(BB_GAMESTATE.get_gamestate())
             return true

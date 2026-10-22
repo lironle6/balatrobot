@@ -120,6 +120,18 @@ end
 --- Disables all rendering operations, graphics, and window updates
 ---@return nil
 local function configure_headless()
+  -- Menu entry resets game time; fixed-dt API starts otherwise repeat seed entropy.
+  local native_generate_starting_seed = generate_starting_seed
+  generate_starting_seed = function()
+    local hover = G.CONTROLLER.cursor_hover
+    local previous_time = hover.time
+    hover.time = love.timer.getTime()
+    local ok, result = pcall(native_generate_starting_seed)
+    hover.time = previous_time
+    if not ok then error(result) end
+    return result
+  end
+
   if love.window and love.window.isOpen() then
     if love.window.minimize then
       love.window.minimize()

@@ -63,7 +63,7 @@
 ---@field cards Card[] Array of cards in this area
 
 ---@class Card
----@field id integer Unique identifier for the card (sort_id)
+---@field id integer Stable unique API identifier for the card
 ---@field key Card.Key Specific card key (e.g., "c_fool", "j_brainstorm, "v_overstock", ...)
 ---@field set Card.Set Card set/type
 ---@field label string Display label/name of the card

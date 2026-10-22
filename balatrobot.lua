@@ -16,6 +16,7 @@ BB_ENDPOINTS = {
   "src/lua/endpoints/health.lua",
   -- Gamestate endpoints
   "src/lua/endpoints/gamestate.lua",
+  "src/lua/endpoints/hand_preview.lua",
   "src/lua/endpoints/joker_collection.lua",
   -- Save/load endpoints
   "src/lua/endpoints/save.lua",
@@ -28,6 +29,8 @@ BB_ENDPOINTS = {
   -- Gameplay endpoints
   "src/lua/endpoints/menu.lua",
   "src/lua/endpoints/start.lua",
+  "src/lua/endpoints/challenges.lua",
+  "src/lua/endpoints/start_challenge.lua",
   -- Blind selection endpoints
   "src/lua/endpoints/skip.lua",
   "src/lua/endpoints/select.lua",
@@ -61,6 +64,7 @@ assert(SMODS.load_file("src/lua/core/server.lua"))() -- define BB_SERVER
 assert(SMODS.load_file("src/lua/core/dispatcher.lua"))() -- define BB_DISPATCHER
 
 -- Load gamestate and errors utilities
+BB_CARD_IDS = assert(SMODS.load_file("src/lua/utils/card_ids.lua"))()
 BB_GAMESTATE = assert(SMODS.load_file("src/lua/utils/gamestate.lua"))()
 assert(SMODS.load_file("src/lua/utils/errors.lua"))()
 
