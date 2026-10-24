@@ -11,6 +11,15 @@ local gamestate = {}
 local boss_reroll = assert(SMODS.load_file("src/lua/utils/boss_reroll.lua"))()
 local joker_display = assert(SMODS.load_file("src/lua/utils/joker_display_preview.lua"))()
 
+-- Preserve the native scored-hand total before its display animates back to zero.
+local native_update_hand_text = update_hand_text
+function update_hand_text(config, vals, ...)
+  if vals and type(vals.chip_total) == "number" and G and G.GAME and G.GAME.current_round then
+    G.GAME.current_round.balatrobot_last_hand_score = vals.chip_total
+  end
+  return native_update_hand_text(config, vals, ...)
+end
+
 -- Observe native payout rows without rerunning rewards or duplicating their arithmetic.
 local cashout, cashout_box
 local native_add_round_eval_row = add_round_eval_row
@@ -513,6 +522,7 @@ local function extract_round_info()
 
   local current = G.GAME.current_round
   round.free_rerolls = current.free_rerolls
+  round.last_hand_score = current.balatrobot_last_hand_score
   for _, field in ipairs({ "idol_card", "mail_card", "ancient_card", "castle_card" }) do
     local target = current[field]
     if target then
