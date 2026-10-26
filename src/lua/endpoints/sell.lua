@@ -96,11 +96,8 @@ return {
     local card = source_array[pos]
 
     -- Track initial state for completion verification
-    local area = sell_type == "joker" and G.jokers or G.consumeables
-    local initial_count = area.config.card_count
     local initial_money = G.GAME.dollars
     local expected_money = initial_money + card.sell_cost
-    local card_id = card.sort_id
 
     -- Log what we're selling
     local item_name = card.ability and card.ability.name or "Unknown"
@@ -121,34 +118,28 @@ return {
       trigger = "condition",
       blocking = false,
       func = function()
-        -- Check all 5 completion criteria
         local current_area = sell_type == "joker" and G.jokers or G.consumeables
         local current_array = current_area.cards
 
-        -- 1. Card count decreased by 1
-        local count_decreased = (current_area.config.card_count == initial_count - 1)
-
-        -- 2. Money increased by sell_cost
         local money_increased = (G.GAME.dollars == expected_money)
 
-        -- 3. Card no longer exists (verify by unique_val)
+        -- Invisible Joker replaces itself; copies can also share sort_id.
         local card_gone = true
         for _, c in ipairs(current_array) do
-          if c.sort_id == card_id then
+          if c == card then
             card_gone = false
             break
           end
         end
 
-        -- 4. State stability
         local state_stable = G.STATE_COMPLETE == true
 
-        -- 5. Still in valid state
+        -- Still in valid state
         local valid_state = (G.STATE == G.STATES.SHOP or G.STATE == G.STATES.SELECTING_HAND
           or G.STATE == G.STATES.SMODS_BOOSTER_OPENED)
 
         -- All conditions must be met
-        if count_decreased and money_increased and card_gone and state_stable and valid_state then
+        if money_increased and card_gone and state_stable and valid_state then
           sendDebugMessage("Return sell()", "BB.ENDPOINTS")
           send_response(BB_GAMESTATE.get_gamestate())
           return true
