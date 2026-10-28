@@ -379,6 +379,25 @@ local function handle_http_request(request, dispatcher)
   handle_jsonrpc(request.body, dispatcher)
 end
 
+-- JSON cannot represent infinite scores or NaN; leave game values untouched.
+local function json_safe(value, seen)
+  if type(value) == "number" then
+    if value ~= value then return "NaN" end
+    if value == math.huge then return "Infinity" end
+    if value == -math.huge then return "-Infinity" end
+  elseif type(value) == "table" then
+    seen = seen or {}
+    if seen[value] then return seen[value] end
+    local copy = {}
+    seen[value] = copy
+    for key, item in pairs(value) do
+      copy[key] = json_safe(item, seen)
+    end
+    return copy
+  end
+  return value
+end
+
 --- Send JSON-RPC response to client (called by endpoints)
 ---@param response Response.Endpoint
 ---@return boolean success
@@ -410,9 +429,12 @@ function BB_SERVER.send_response(response)
     }
   end
 
-  local success, json_str = pcall(json.encode, wrapped)
+  local success, json_str = pcall(function()
+    return json.encode(json_safe(wrapped))
+  end)
   if not success then
     sendDebugMessage("Failed to encode response: " .. tostring(json_str), "BB.SERVER")
+    send_http_error(500, "Failed to encode response")
     return false
   end
 

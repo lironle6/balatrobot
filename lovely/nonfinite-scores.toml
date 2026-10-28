@@ -1,0 +1,36 @@
+[manifest]
+version = "1.0.0"
+dump_lua = true
+priority = 0
+
+[[patches]]
+[patches.pattern]
+target = "engine/string_packer.lua"
+pattern = 'if type_v == "string" then v = string.format("%q", v) end'
+position = "before"
+match_indent = true
+payload = '''
+-- Bare inf/nan names unpack as nil in Steamodded's empty environment.
+if type_v == "number" then
+    if v ~= v then v = "(0/0)"
+    elseif v == math.huge then v = "(1/0)"
+    elseif v == -math.huge then v = "(-1/0)"
+    end
+end
+'''
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = 'if G.GAME.round_scores[score] and math.floor(amt) > G.GAME.round_scores[score].amt then'
+position = "at"
+match_indent = true
+payload = 'if G.GAME.round_scores[score] and math.floor(amt) > (G.GAME.round_scores[score].amt or 0) then'
+
+[[patches]]
+[patches.pattern]
+target = "functions/misc_functions.lua"
+pattern = 'if G.PROFILES[G.SETTINGS.profile].high_scores[score] and math.floor(amt) > G.PROFILES[G.SETTINGS.profile].high_scores[score].amt then'
+position = "at"
+match_indent = true
+payload = 'if G.PROFILES[G.SETTINGS.profile].high_scores[score] and math.floor(amt) > (G.PROFILES[G.SETTINGS.profile].high_scores[score].amt or 0) then'
