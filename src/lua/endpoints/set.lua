@@ -6,6 +6,7 @@
 
 ---@class Request.Endpoint.Set.Params
 ---@field money integer? New money amount
+---@field consumable_limit integer? Consumable capacity for the active run
 ---@field chips integer? New chips amount
 ---@field ante integer? New ante number
 ---@field round integer? New round number
@@ -25,6 +26,11 @@ return {
   description = "Set a in-game value",
 
   schema = {
+    consumable_limit = {
+      type = "integer",
+      required = false,
+      description = "Consumable capacity for the active run",
+    },
     money = {
       type = "integer",
       required = false,
@@ -87,12 +93,24 @@ return {
       and args.hands == nil
       and args.discards == nil
       and args.shop == nil
+      and args.consumable_limit == nil
     then
       send_response({
         message = "Must provide at least one field to set",
         name = BB_ERROR_NAMES.BAD_REQUEST,
       })
       return
+    end
+
+    if args.consumable_limit ~= nil then
+      if not G.consumeables or args.consumable_limit < math.max(1, #G.consumeables.cards) then
+        send_response({
+          message = "Consumable capacity must be positive and fit the held cards",
+          name = BB_ERROR_NAMES.BAD_REQUEST,
+        })
+        return
+      end
+      G.consumeables.config.card_limit = args.consumable_limit
     end
 
     -- Set money
